@@ -30,23 +30,18 @@ function addActions(row) {
   let like = document.createElement("button")
   like.appendChild(document.createTextNode('❤️'))
   if (row.classList.contains("misskey")) {
-    console.log("MISSKEY ROW")
-    like.addEventListener("click", function (e) { e.preventDefault(); misskeyReact(this.parentNode) })
+    like.addEventListener("click", function (e) { e.preventDefault(); doLike(this.parentNode, misskeySearch, misskeyLike) })
   } else if (row.classList.contains("mastodon")) {
-    console.log("MASTODON ROW")
-    like.addEventListener("click", function (e) { e.preventDefault(); mastodonLike(this.parentNode) })
+    like.addEventListener("click", function (e) { e.preventDefault(); doLike(this.parentNode, mastodonSearch, mastodonLike) })
   }
-  console.log("add like anchor")
   row.appendChild(like)
 
-  async function misskeyReact(row) {
-    var tabs = await browser.tabs.query({ currentWindow: true, active: true });
-    const postUrl = tabs[0].url
-    console.log("MISSKEY REACT", postUrl)
 
-    let token = row.getAttribute("data-token")
-    var apiUrl = row.getAttribute("data-base-api-url")
-    let statusResponse = await fetch(apiUrl + '/notes/search', {
+
+  //Search a status agains misskey-compatible instance
+  // options is an obect with apiUrl and token properties
+  async function misskeySearch(postUrl, options){
+    let statusResponse = await fetch(options.apiUrl + '/notes/search', {
       method: "POST",
       body: JSON.stringify({
         query: postUrl,
@@ -54,7 +49,7 @@ function addActions(row) {
       }),
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${options.token}`
       }
     })
     var statuses
@@ -68,45 +63,40 @@ function addActions(row) {
       // fixme : compare by removing trailing / ?
       status = statuses.find((s) => s.uri === postUrl || s.url === postUrl)
     }
-    if (status === undefined) {
-      error(row, "This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
-    } else {
-      let response = await fetch(apiUrl + '/notes/reactions/create', {
+    return status
+  }
+
+  // Adds a :heart: reaction to the status passed as argument
+  // options is an object with apiUrl and token properties
+  async function misskeyLike(statusId, options){
+    console.log("MISSKEY LIKE", statusId)
+    let response = await fetch(options.apiUrl + '/notes/reactions/create', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${options.token}`
         },
         body: JSON.stringify({
-          noteId: status.id,
+          noteId: statusId,
           reaction: ":heart:"
         })
       })
-      if (!response.ok) {
-        error(row, `Failed to post reaction : ${response.body}`)
-      }
-
-    }
+      return response
   }
 
-  async function mastodonLike(row) {
-    var tabs = await browser.tabs.query({ currentWindow: true, active: true });
-    const postUrl = tabs[0].url
-    console.log("MASTODON LIKE", postUrl)
-    let token = row.getAttribute("data-token")
-    var apiUrl = row.getAttribute("data-base-api-url")
+  //Search a status agains mastodon-compatible instance
+  // options is an obect with apiUrl and token properties
+  async function mastodonSearch(postUrl, options){
     var params = new URLSearchParams()
     params.append("q", postUrl)
     params.append("type", "statuses")
     params.append("resolve", "true")
     params.append("limit", 10)
-    var searchUrl = `${apiUrl}/v2/search?${params}`
-    console.log("MASTODON SEARCH URL", searchUrl)
-    let statusResponse = await fetch(`${apiUrl}/v2/search?${params}`, {
+    let statusResponse = await fetch(`${options.apiUrl}/v2/search?${params}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${options.token}`
       }
     })
 
@@ -122,24 +112,44 @@ function addActions(row) {
       // fixme : compare by removing trailing / ?
       status = statuses.find((s) => s.uri === postUrl || s.url === postUrl)
     }
-    if (status === undefined) {
-      error(row, "This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
-    } else {
-      let response = await fetch(`${apiUrl}/v1/statuses/${status.id}/favourite`, {
+    return status
+  }
+
+  // Adds the note passed as argument to user's favourites
+  // options is an object with apiUrl and token properties
+  async function mastodonLike(noteId, options){
+    console.log("MASTODON LIKE", noteId)
+    let response = await fetch(`${options.apiUrl}/v1/statuses/${noteId}/favourite`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${options.token}`
         },
       })
-      if (!response.ok) {
-        error(row, `Failed to post reaction : ${response.body}`)
-      }
-    }
-
+      return response
   }
 
-  function error(row, message) {
+  async function doLike(row, searchFn, likeFn){
+    var tabs = await browser.tabs.query({ currentWindow: true, active: true });
+    const postUrl = tabs[0].url
+    console.log("LIKE", postUrl)
+
+    let token = row.getAttribute("data-token")
+    var apiUrl = row.getAttribute("data-base-api-url")
+    var options = {apiUrl: apiUrl, token:token}
+    var status = await searchFn(postUrl, options)
+    if (status === undefined) {
+      error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
+    } else {
+      console.log("LIKE FOUND STATUS", status)
+      let response = await likeFn(status.id, options)
+      if (!response.ok) {
+        error(`Failed to post reaction : ${response.body}`)
+      }
+    }
+  }
+
+  function error(message) {
     browser.notifications.create("", {
       type: "basic",
       message: message,
@@ -147,6 +157,7 @@ function addActions(row) {
       iconUrl: "../icons/fed-down-96.png"
     })
   }
+
 }
 
 load()
