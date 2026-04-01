@@ -36,6 +36,15 @@ function addActions(row) {
   }
   row.appendChild(like)
 
+  let boost = document.createElement("button")
+  boost.appendChild(document.createTextNode('🔃'))
+  if (row.classList.contains("misskey")) {
+    boost.addEventListener("click", function (e) { e.preventDefault(); doBoost(this.parentNode, misskeySearch, misskeyBoost) })
+  } else if (row.classList.contains("mastodon")) {
+    boost.addEventListener("click", function (e) { e.preventDefault(); doBoost(this.parentNode, mastodonSearch, mastodonBoost) })
+  }
+  row.appendChild(boost)
+
 
 
   //Search a status agains misskey-compatible instance
@@ -79,6 +88,23 @@ function addActions(row) {
         body: JSON.stringify({
           noteId: statusId,
           reaction: ":heart:"
+        })
+      })
+      return response
+  }
+
+  // Boosts the status passed as argument
+  // options is an object with apiUrl and token properties
+  async function misskeyBoost(statusId, options){
+    console.log("MISSKEY BOOST", statusId)
+    let response = await fetch(options.apiUrl + '/notes/create', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${options.token}`
+        },
+        body: JSON.stringify({
+          renoteId: statusId,
         })
       })
       return response
@@ -129,6 +155,20 @@ function addActions(row) {
       return response
   }
 
+  // Boosts the note passed as argument 
+  // options is an object with apiUrl and token properties
+  async function mastodonBoost(noteId, options){
+    console.log("MASTODON BOOST", noteId)
+    let response = await fetch(`${options.apiUrl}/v1/statuses/${noteId}/reblog`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${options.token}`
+        },
+      })
+      return response
+  }
+
   async function doLike(row, searchFn, likeFn){
     var tabs = await browser.tabs.query({ currentWindow: true, active: true });
     const postUrl = tabs[0].url
@@ -147,6 +187,29 @@ function addActions(row) {
         error(`Failed to post reaction : ${response.body}`)
       }else{
         success("Reacted to post", "❤️")
+      }
+    }
+  }
+
+
+  async function doBoost(row, searchFn, boostFn){
+    var tabs = await browser.tabs.query({ currentWindow: true, active: true });
+    const postUrl = tabs[0].url
+    console.log("BOOST", postUrl)
+
+    let token = row.getAttribute("data-token")
+    var apiUrl = row.getAttribute("data-base-api-url")
+    var options = {apiUrl: apiUrl, token:token}
+    var status = await searchFn(postUrl, options)
+    if (status === undefined) {
+      error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
+    } else {
+      console.log("BOOST FOUND STATUS", status)
+      let response = await boostFn(status.id, options)
+      if (!response.ok) {
+        error(`Failed to boost post : ${response.body}`)
+      }else{
+        success("Boosted post", "🔃")
       }
     }
   }
