@@ -145,6 +145,8 @@ function addActions(row) {
       let response = await likeFn(status.id, options)
       if (!response.ok) {
         error(`Failed to post reaction : ${response.body}`)
+      }else{
+        success("Reacted to post", "❤️")
       }
     }
   }
@@ -154,6 +156,15 @@ function addActions(row) {
       type: "basic",
       message: message,
       title: "Fed-Down error !",
+      iconUrl: "../icons/fed-down-96.png"
+    })
+  }
+
+  async function success(message, icon) {
+    browser.notifications.create("", {
+      type: "basic",
+      message: message,
+      title: `Fed-Down ${icon}`,
       iconUrl: "../icons/fed-down-96.png"
     })
   }
