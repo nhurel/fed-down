@@ -20,7 +20,7 @@ async function load() {
     addActions(row)
 
 
-    document.body.appendChild(row)
+    document.getElementById("container").appendChild(row)
   }
 }
 

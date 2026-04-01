@@ -1,7 +1,13 @@
 html,
 body {
-  width: 300px;
+  /* width: 400px; */
+  background-color: #eee;
 }
+
+div#container {
+  width: 100%;
+}
+
 .row {
   width: 100%;
   padding: 4px;
