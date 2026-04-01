@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="options.css" />
+    </head>
+    <body>
+        <form id="addAccount">
+            <input id="addAccountHandle" type="text" />
+            <select id="apiType">
+                <option value="mastodon">mastodon</option>
+                <option value="misskey">*key</option>
+            </select>
+            <input type="text" id="apiToken" placeholder="api token" />
+            <button type="submit">Add account</button>
+        </form>
+        <ul id="accounts">
+
+        </ul>
+    </body>
+    <script src="options.js"></script>
+</html>
+

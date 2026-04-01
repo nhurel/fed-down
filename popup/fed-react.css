@@ -1,0 +1,20 @@
+html,
+body {
+  width: 300px;
+}
+.row {
+  width: 100%;
+  padding: 4px;
+  font-size: 1em;
+  text-align: center;
+  cursor: pointer;
+}
+
+.row img, .row button {
+  height: 20px;
+  margin: 0 10px ;
+}
+
+.row:hover {
+  background-color: #cff2f2;
+}
