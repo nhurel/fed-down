@@ -2,7 +2,8 @@
   "manifest_version": 2,
   "name": "Fed-Down",
   "version": "0.0.1",
-  "description": "Ease fediverse interactions between all accounts",
+  "description": "Ease fediverse interactions between all your accounts",
+  
   "icons": {
     "96": "icons/fed-down-96.png"
   },
