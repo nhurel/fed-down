@@ -10,18 +10,20 @@ async function addAccount(e){
     let apiType = document.getElementById("apiType").value
     let apiToken = document.getElementById("apiToken").value 
     var apiUrl = `https://${fullHandle.split("@").pop()}`
+
     if(apiType==='misskey'){
         apiUrl += '/api'
     }else if(apiType === "mastodon"){
         apiUrl += '/api'
     }
 
+
     allAccounts.push({
         handle: fullHandle, 
         api: apiType, 
         token: apiToken,
         baseApiUrl: apiUrl,
-        favicon: `https://${fullHandle.split("@").pop()}/favicon.ico`   //TODO fetch link rel=icon to get correct favicon URL
+        favicon: apiType == "misskey" ? `https://${fullHandle.split("@").pop()}/favicon.ico` : "../icons/mastodon.png"
     })
     options.accounts= allAccounts
     browser.storage.sync.set(options);
