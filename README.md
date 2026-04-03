@@ -33,6 +33,7 @@ The process is currently manual as you need to generate an API token on your fed
 - Click "Service integration" menu
 - Click the "Generate an access token" button
 - Select the following permissions 
+  - Read account information
   - Manage favorites
   - Create / Delete notes
   - Manage reactions

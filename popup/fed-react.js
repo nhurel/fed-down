@@ -50,7 +50,28 @@ function addActions(row) {
   //Search a status agains misskey-compatible instance
   // options is an obect with apiUrl and token properties
   async function misskeySearch(postUrl, options){
-    let statusResponse = await fetch(options.apiUrl + '/notes/search', {
+      var status
+      var statusResponse = await fetch(options.apiUrl + '/ap/show', {
+        method: "POST",
+        body: JSON.stringify({
+          uri: postUrl,
+          limit: 10
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${options.token}`
+        }
+      })
+      if (statusResponse.ok) {
+        status = await statusResponse.json()
+        console.log("STATUS", status)
+        // status id is under object key
+        status.id = status.object.id
+        return status
+      }
+
+      //FALLBACK : the AP resource wasn't found. Trying with a search
+     statusResponse = await fetch(options.apiUrl + '/notes/search', {
       method: "POST",
       body: JSON.stringify({
         query: postUrl,
@@ -61,8 +82,8 @@ function addActions(row) {
         "Authorization": `Bearer ${options.token}`
       }
     })
+
     var statuses
-    var status
     if (statusResponse.ok) {
       statuses = await statusResponse.json()
       console.log("STATUS", statuses.length)
