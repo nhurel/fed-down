@@ -47,7 +47,8 @@
         "<all_urls>"
       ],
       "js": [
-        "src/fed-down.js"
+        "src/fed-down.js",
+        "notifications.js"
       ]
     }
   ]

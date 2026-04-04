@@ -31,6 +31,7 @@ async function loadMenu() {
   })
 
   async function quote(accountIndex, text, pageUrl) {
+    const notifications = await import("./notifications.js");
     account = allAccounts[accountIndex]
     console.log("CONTEXT MENU", account, text, pageUrl)
     let options = {
@@ -50,9 +51,9 @@ async function loadMenu() {
         break;
     }
     if(!response.ok){
-      error("Failed to post your quote")
+      notifications.error("Failed to post your quote")
     }else{
-      success("Quote posted !", "💬")
+      notifications.success("Quote posted !", "💬")
     }
 
   }
@@ -72,28 +73,6 @@ async function loadMenu() {
     })
     return response
   }
-
-
-  // FIXME : remove duplication from popup/fed-react.js
-  function error(message) {
-    browser.notifications.create("", {
-      type: "basic",
-      message: message,
-      title: "Fed-Down error !",
-      iconUrl: "../icons/fed-down-96.png"
-    })
-  }
-
-  async function success(message, icon) {
-    browser.notifications.create("", {
-      type: "basic",
-      message: message,
-      title: `Fed-Down ${icon}`,
-      iconUrl: "../icons/fed-down-96.png"
-    })
-  }
-
-
 }
 
 loadMenu()

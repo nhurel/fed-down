@@ -191,6 +191,7 @@ function addActions(row) {
   }
 
   async function doLike(row, searchFn, likeFn){
+    const notifications = await import("../notifications.js");
     var tabs = await browser.tabs.query({ currentWindow: true, active: true });
     const postUrl = tabs[0].url
     console.log("LIKE", postUrl)
@@ -200,20 +201,21 @@ function addActions(row) {
     var options = {apiUrl: apiUrl, token:token}
     var status = await searchFn(postUrl, options)
     if (status === undefined) {
-      error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
+      notifications.error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
     } else {
       console.log("LIKE FOUND STATUS", status)
       let response = await likeFn(status.id, options)
       if (!response.ok) {
-        error(`Failed to post reaction : ${response.body}`)
+        notifications.error(`Failed to post reaction : ${response.body}`)
       }else{
-        success("Reacted to post", "❤️")
+        notifications.success("Reacted to post", "❤️")
       }
     }
   }
 
 
   async function doBoost(row, searchFn, boostFn){
+    const notifications = await import("../notifications.js");
     var tabs = await browser.tabs.query({ currentWindow: true, active: true });
     const postUrl = tabs[0].url
     console.log("BOOST", postUrl)
@@ -223,36 +225,18 @@ function addActions(row) {
     var options = {apiUrl: apiUrl, token:token}
     var status = await searchFn(postUrl, options)
     if (status === undefined) {
-      error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
+      notifications.error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
     } else {
       console.log("BOOST FOUND STATUS", status)
       let response = await boostFn(status.id, options)
       if (!response.ok) {
-        error(`Failed to boost post : ${response.body}`)
+        notifications.error(`Failed to boost post : ${response.body}`)
       }else{
-        success("Boosted post", "🔃")
+        notifications.success("Boosted post", "🔃")
       }
     }
   }
 
-  function error(message) {
-    browser.notifications.create("", {
-      type: "basic",
-      message: message,
-      title: "Fed-Down error !",
-      iconUrl: "../icons/fed-down-96.png"
-    })
-  }
-
-  async function success(message, icon) {
-    browser.notifications.create("", {
-      type: "basic",
-      message: message,
-      title: `Fed-Down ${icon}`,
-      iconUrl: "../icons/fed-down-96.png"
-    })
-  }
 
 }
-
 load()
