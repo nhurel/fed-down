@@ -42,36 +42,22 @@ async function loadMenu() {
     
     ${pageUrl}`
     var response
+    var client
     switch (account.api) {
       case "misskey":
-        response= await misskeyQuote(message, options)
+        client = await import("./src/misskey.js");
         break;
       case "mastodon":
-        //TODO mastodonQuote
+        client = await import("./src/mastodon.js");
         break;
     }
+    response= await client.post(message, options)
     if(!response.ok){
       notifications.error("Failed to post your quote")
     }else{
       notifications.success("Quote posted !", "💬")
     }
 
-  }
-
-
-  async function misskeyQuote(message, options){
-    var response = await fetch(`${options.apiUrl}/notes/create`, {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${options.token}`
-        },
-      body: JSON.stringify({
-        text: message
-      },
-    )
-    })
-    return response
   }
 }
 
