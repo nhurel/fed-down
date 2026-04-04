@@ -30,6 +30,7 @@ async function addAccount(e){
     document.getElementById("addAccountHandle").value = ""
     document.getElementById("apiToken").value = ""
     getAccounts();
+    browser.runtime.sendMessage("fed-down-reload")
 }
 
 async function deleteAccount(account){
@@ -40,6 +41,7 @@ async function deleteAccount(account){
         accounts: allAccounts,
     });
     getAccounts()
+    browser.runtime.sendMessage("fed-down-reload")
 }
 
 async function getAccounts(){

@@ -62,3 +62,11 @@ async function loadMenu() {
 }
 
 loadMenu()
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message === "fed-down-reload") {
+    browser.contextMenus.remove("fed-down-selection")
+    loadMenu();
+    return true;
+  }
+});
