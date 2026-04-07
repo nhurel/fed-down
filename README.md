@@ -14,30 +14,4 @@ Use-cases :
 
 ## Setup
 
-To use this extension, you must register fediverse accounts in the plugin settings.
-The process is currently manual as you need to generate an API token on your fediverse instance to register it in the plugin.
-
-### Maston
-- Go to your profile settings
-- Click the Development menu
-- Click "New application"
-- Enter "Fed-Down" as then name and select the following permissions : 
-  - read:search
-  - profile
-  - write: favourites
-  - write: statuses
-
-- Validate the changes and click on the application details.
-- Copy the token and use it in the plugin configuration
-
-### Misskey (Calkey, Sharkey, *key)
-- Go to "Settings"
-- Click "Service integration" menu
-- Click the "Generate an access token" button
-- Select the following permissions 
-  - Read account information
-  - Manage favorites
-  - Create / Delete notes
-  - Manage reactions
-- Validate the settings 
-- Copy the generated token and use it in the plugin configuration
+To use this extension, you must register fediverse accounts in the plugin settings. Enter your fediverse account following format `username@hostname.com` and select the API type in the dropdown to launch the authorization flow.

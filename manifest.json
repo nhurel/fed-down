@@ -38,7 +38,8 @@
     "storage",
     "tabs",
     "notifications",
-    "contextMenus"
+    "contextMenus",
+    "identity"
   ],
   "content_security_policy": "default-src 'self' https://*; script-src 'self'",
   "content_scripts": [

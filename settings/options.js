@@ -1,14 +1,42 @@
-async function addAccount(e){
+async function getToken(e){
     e.preventDefault();
+    const notifications = await import("../notifications.js");
+    let fullHandle = document.getElementById("addAccountHandle").value
+    let hostname = fullHandle.split("@").pop()
+    let apiType = document.getElementById("apiType").value
+
+    var client;
+    switch (apiType) {
+      case "misskey":
+        client = await import("../src/misskey.js");
+        break;
+      case "mastodon":
+        client = await import("../src/mastodon.js");
+        break;
+    }
+   
+    try{
+        var token = await client.authenticate(hostname)
+        if(token == undefined){
+            throw new Error("Could not create token")
+        }
+        await addAccount(fullHandle, apiType, token)
+    }catch(e){
+        console.error(e)
+        notifications.error(e.message)
+    }
+}
+
+
+
+async function addAccount(fullHandle, apiType, apiToken){
     console.log("ADD ACCOUNTS")
     var options = await browser.storage.sync.get()
     var allAccounts = options.accounts
     if(!allAccounts){
         allAccounts = []
     }
-    let fullHandle = document.getElementById("addAccountHandle").value
-    let apiType = document.getElementById("apiType").value
-    let apiToken = document.getElementById("apiToken").value 
+    
     var apiUrl = `https://${fullHandle.split("@").pop()}`
 
     if(apiType==='misskey'){
@@ -28,7 +56,7 @@ async function addAccount(e){
     options.accounts= allAccounts
     browser.storage.sync.set(options);
     document.getElementById("addAccountHandle").value = ""
-    document.getElementById("apiToken").value = ""
+    // document.getElementById("apiToken").value = ""
     getAccounts();
     browser.runtime.sendMessage("fed-down-reload")
 }
@@ -63,4 +91,4 @@ async function getAccounts(){
 }
 
 document.addEventListener("DOMContentLoaded", getAccounts);
-document.querySelector("#addAccount").addEventListener("submit", addAccount);
+document.querySelector("#addAccount").addEventListener("submit", getToken);
