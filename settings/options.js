@@ -6,16 +6,11 @@ async function getToken(e){
     let apiType = document.getElementById("apiType").value
 
     var client;
-    switch (apiType) {
-      case "misskey":
-        client = await import("../src/misskey.js");
-        break;
-      case "mastodon":
-        client = await import("../src/mastodon.js");
-        break;
-    }
+    const factory = await import("../src/fed-down.js")
+    client = await factory.getFediClient(apiType)
    
     try{
+        //token is an object with access_token property + oauth informations
         var token = await client.authenticate(hostname)
         if(token == undefined){
             throw new Error("Could not create token")
@@ -41,7 +36,7 @@ async function addAccount(fullHandle, apiType, apiToken){
 
     if(apiType==='misskey'){
         apiUrl += '/api'
-    }else if(apiType === "mastodon"){
+    }else if(apiType === "mastodon" || apiType == "pixelfed"){
         apiUrl += '/api'
     }
 
@@ -53,7 +48,7 @@ async function addAccount(fullHandle, apiType, apiToken){
         baseApiUrl: apiUrl,
         favicon: apiType == "misskey" ? `https://${fullHandle.split("@").pop()}/favicon.ico` : "../icons/mastodon.png"
     })
-    options.accounts= allAccounts
+    // options.accounts= allAccounts
     browser.storage.sync.set(options);
     document.getElementById("addAccountHandle").value = ""
     // document.getElementById("apiToken").value = ""

@@ -1,5 +1,3 @@
-//Search a status agains mastodon-compatible instance
-// options is an obect with apiUrl and token properties
 export async function search(postUrl, options) {
   var params = new URLSearchParams()
   params.append("q", postUrl)
@@ -32,7 +30,7 @@ export async function search(postUrl, options) {
 // Adds the note passed as argument to user's favourites
 // options is an object with apiUrl and token properties
 export async function like(noteId, options) {
-  console.log("MASTODON LIKE", noteId)
+  console.log("PIXELFED LIKE", noteId)
   let response = await fetch(`${options.apiUrl}/v1/statuses/${noteId}/favourite`, {
     method: "POST",
     headers: {
@@ -46,7 +44,7 @@ export async function like(noteId, options) {
 // Boosts the note passed as argument 
 // options is an object with apiUrl and token properties
 export async function boost(noteId, options) {
-  console.log("MASTODON BOOST", noteId)
+  console.log("PIXELFED BOOST", noteId)
   let response = await fetch(`${options.apiUrl}/v1/statuses/${noteId}/reblog`, {
     method: "POST",
     headers: {
@@ -61,7 +59,7 @@ export async function boost(noteId, options) {
 // Posts a new status with given message
 // options is an object with apiUrl and token properties
 export async function post(message, options) {
-  console.log("MASTODON POST", options)
+  console.log("PIXELFED POST", options)
   var params = new URLSearchParams()
   params.append("status", message)
 
@@ -76,26 +74,59 @@ export async function post(message, options) {
   return response
 }
 
-
-export async function authenticate(hostname) {
-  var response = await fetch(`https://${hostname}/.well-known/oauth-authorization-server`)
-  if (!response.ok) {
-    throw new Error("Failed to fetch oauth settings")
-  }
-  let oauthMetadata = await response.json()
-  let redirectUri = browser.identity.getRedirectURL();
-  //register app
-  response = await fetch(oauthMetadata.app_registration_endpoint,
-    {
+export async function refreshToken(account){
+  // for pixelfed, account.token contains all information to manage token refresh
+  var token = account.token
+  //Converting seconds to milliseconds
+  var expirationDate = (token.created_at + token.expires_in) *1000 
+  if(expirationDate < Date.now() - 60000){
+    console.log("token needs to be refreshed")
+    var response = await fetch(token.oauth.token_endpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+      "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        client_name: "fed-down-alpha",
-        redirect_uris: [redirectUri],
-        scopes: "profile read:search write:statuses write:favourites"
+        grant_type: "refresh_token",
+        refresh_token: token.refresh_token,
+        client_id: token.oauth.client_id,
+        client_secret: token.oauth.client_secret,
+        scope: 'read write'
       })
+    })
+    if(!response.ok){
+      throw new Error("Access token could not be refreshed")
+    }
+   
+    let refreshedToken = await response.json()
+    console.log("REFRESHED TOKEN", refreshedToken)
+    token.created_at = refreshedToken.created_at
+    token.expires_in = refreshedToken.expires_in
+    token.access_token = refreshedToken.access_token
+    token.refresh_token = refreshedToken.refresh_token
+    return true
+  }
+  return false
+}
+
+
+export async function authenticate(hostname) {
+ 
+  let oauthMetadata = {
+    app_registration_endpoint: `https://${hostname}/api/v1/apps`,
+    authorization_endpoint: `https://${hostname}/oauth/authorize`,
+    token_endpoint: `https://${hostname}/oauth/token`,
+  } 
+  
+ 
+  let redirectUri = browser.identity.getRedirectURL();
+  //register app
+   var params = new URLSearchParams()
+   params.append("client_name", "fed-down-alpha")
+   params.append("redirect_uris", redirectUri)
+  var response = await fetch(`${oauthMetadata.app_registration_endpoint}?${params}`,
+    {
+      method: "POST",
     }
   )
   if (!response.ok) {
@@ -104,11 +135,12 @@ export async function authenticate(hostname) {
   let oauthInfo = await response.json()
 
   // create token
-  var params = new URLSearchParams()
+  params = new URLSearchParams()
   params.append("response_type", "code")
   params.append("client_id", oauthInfo.client_id)
   params.append("redirect_uri", oauthInfo.redirect_uri)
-  params.append("scope", "profile read:search write:statuses write:favourites")
+  params.append("grant_type", "authorization_code")
+  params.append("scope", "read write")
 
   var oauthRedirectUri = await browser.identity.launchWebAuthFlow({
     url: `${oauthMetadata.authorization_endpoint}?${params}`,
@@ -135,11 +167,8 @@ export async function authenticate(hostname) {
     throw new Error("Failed to create application token")
   }
   let tokenResponse = await response.json()
+  // pixelfed returns expirable token so we must save all the info
   tokenResponse.oauth = oauthInfo
+  tokenResponse.oauth.token_endpoint = oauthMetadata.token_endpoint
   return tokenResponse
-}
-
-// no need to refresh token with mastodon api
-export async function refreshToken(_account) {
-  return false;
 }

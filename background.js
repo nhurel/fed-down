@@ -45,18 +45,21 @@ async function loadMenu() {
   // Returns true if the resource was boosted, false if the resource is not federated or boost failed
   async function mayBoost(accountIndex, url) {
     const notifications = await import("./notifications.js");
-    account = allAccounts[accountIndex]
+    var account = allAccounts[accountIndex]
+
+
+    
     let options = {
-      token: account.token,
+      token: account.token.access_token,
       apiUrl: account.baseApiUrl
     }
-    switch (account.api) {
-      case "misskey":
-        client = await import("./src/misskey.js");
-        break;
-      case "mastodon":
-        client = await import("./src/mastodon.js");
-        break;
+    var client;
+    const factory = await import("./src/fed-down.js")
+    client = await factory.getFediClient(account.api)
+
+    let refresh = await fediClient.refreshToken(account) 
+    if( refresh ){
+      updateAccount(account)
     }
 
     var status = await client.search(url, options)
@@ -88,14 +91,10 @@ async function loadMenu() {
     message += pageUrl
     var response
     var client
-    switch (account.api) {
-      case "misskey":
-        client = await import("./src/misskey.js");
-        break;
-      case "mastodon":
-        client = await import("./src/mastodon.js");
-        break;
-    }
+    var client;
+    const factory = await import("../src/fed-down.js")
+    client = await factory.getFediClient(apiType)
+
     response = await client.post(message, options)
     if (!response.ok) {
       notifications.error("Failed to share this page")
@@ -107,6 +106,19 @@ async function loadMenu() {
       }
     }
 
+  }
+
+  //FIXME REMOVE DUPLICATE METHOD
+  async function updateAccount(account){
+    var options = await browser.storage.sync.get()
+    var allAccounts = options.accounts
+    for(let i=0; i<allAccounts.length;i++){
+      if(allAccounts[i].handle === account.handle){
+        allAccounts[i]=account
+      }
+    }
+    // options.accounts= allAccounts
+    browser.storage.sync.set(options);
   }
 }
 

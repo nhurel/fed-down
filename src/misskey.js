@@ -125,7 +125,12 @@ export async function authenticate(hostname) {
   }
 
   var tokenJson = await response.json()
-  return tokenJson.token
+  return {access_token: tokenJson.token}
+}
+
+// no need to refresh token with misskey
+export async function refreshToken(_account) {
+  return false;
 }
 
 /*export async function authenticate(hostname){

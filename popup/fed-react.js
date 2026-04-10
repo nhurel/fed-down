@@ -12,8 +12,9 @@ async function load() {
     img.src = accounts[i].favicon
     row.classList.add("row")
     row.classList.add(accounts[i].api)
-    row.setAttribute("data-token", accounts[i].token);
-    row.setAttribute('data-base-api-url', accounts[i].baseApiUrl)
+    // row.setAttribute("data-token", accounts[i].token);
+    // row.setAttribute('data-base-api-url', accounts[i].baseApiUrl)
+    row.setAttribute('data-index', i)
     row.appendChild(img)
     row.appendChild(document.createTextNode(accounts[i].handle))
 
@@ -27,34 +28,38 @@ async function load() {
 async function addActions(row) {
   console.log("addActions")
   console.log("managing row", row)
+  var options = await browser.storage.sync.get()
+  var allAccounts = options.accounts
+  var account = allAccounts[row.getAttribute("data-index")]
+
   let like = document.createElement("button")
   like.appendChild(document.createTextNode('❤️'))
   var client
+  const factory = await import("../src/fed-down.js")
+  client = await factory.getFediClient(account.api)
 
-  if (row.classList.contains("misskey")) {
-    client = await import("../src/misskey.js");
-  } else if (row.classList.contains("mastodon")) {
-    client = await import("../src/mastodon.js");
-  }
-  like.addEventListener("click", function (e) { e.preventDefault(); doLike(this.parentNode, client) })
+  like.addEventListener("click", function (e) { e.preventDefault(); doLike(account, client) })
   row.appendChild(like)
 
   let boost = document.createElement("button")
   boost.appendChild(document.createTextNode('🔃'))
-  boost.addEventListener("click", function (e) { e.preventDefault(); doBoost(this.parentNode, client) })
+  boost.addEventListener("click", function (e) { e.preventDefault(); doBoost(account, client) })
   
   row.appendChild(boost)
 
 
-  async function doLike(row, fediClient){
+  async function doLike(account, fediClient){
     const notifications = await import("../notifications.js");
     var tabs = await browser.tabs.query({ currentWindow: true, active: true });
     const postUrl = tabs[0].url
     console.log("LIKE", postUrl)
 
-    let token = row.getAttribute("data-token")
-    var apiUrl = row.getAttribute("data-base-api-url")
-    var options = {apiUrl: apiUrl, token:token}
+    let refresh = await fediClient.refreshToken(account)
+    if( refresh ){
+      updateAccount(account)
+    }
+    var options = {apiUrl: account.baseApiUrl, token:account.token.access_token}
+
     var status = await fediClient.search(postUrl, options)
     if (status === undefined) {
       notifications.error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
@@ -70,15 +75,17 @@ async function addActions(row) {
   }
 
 
-  async function doBoost(row, fediClient){
+  async function doBoost(account, fediClient){
     const notifications = await import("../notifications.js");
     var tabs = await browser.tabs.query({ currentWindow: true, active: true });
     const postUrl = tabs[0].url
     console.log("BOOST", postUrl)
 
-    let token = row.getAttribute("data-token")
-    var apiUrl = row.getAttribute("data-base-api-url")
-    var options = {apiUrl: apiUrl, token:token}
+    let refresh = await fediClient.refreshToken(account) 
+    if( refresh ){
+      updateAccount(account)
+    }
+    var options = {apiUrl: account.baseApiUrl, token:account.token.access_token}
     var status = await fediClient.search(postUrl, options)
     if (status === undefined) {
       notifications.error("This page is not part of the fediverse or unknown from your instance. Try to quote it from contextual menu to share what caught your attention")
@@ -93,6 +100,17 @@ async function addActions(row) {
     }
   }
 
+  async function updateAccount(account){
+    var options = await browser.storage.sync.get()
+    var allAccounts = options.accounts
+    for(let i=0; i<allAccounts.length;i++){
+      if(allAccounts[i].handle === account.handle){
+        allAccounts[i]=account
+      }
+    }
+    // options.accounts= allAccounts
+    browser.storage.sync.set(options);
+  }
 
 }
 load()
