@@ -32,7 +32,8 @@ async function addAccount(fullHandle, apiType, apiToken){
         allAccounts = []
     }
     
-    var apiUrl = `https://${fullHandle.split("@").pop()}`
+    var hostname = fullHandle.split("@").pop()
+    var apiUrl = `https://${hostname}`
 
     if(apiType==='misskey'){
         apiUrl += '/api'
@@ -40,13 +41,13 @@ async function addAccount(fullHandle, apiType, apiToken){
         apiUrl += '/api'
     }
 
-
+    const favIcon = await findFavIcon(hostname, apiType)
     allAccounts.push({
         handle: fullHandle, 
         api: apiType, 
         token: apiToken,
         baseApiUrl: apiUrl,
-        favicon: apiType == "misskey" ? `https://${fullHandle.split("@").pop()}/favicon.ico` : "../icons/mastodon.png"
+        favicon: favIcon
     })
     // options.accounts= allAccounts
     browser.storage.sync.set(options);
@@ -83,6 +84,26 @@ async function getAccounts(){
         document.querySelector("#accounts").appendChild(li)
     }
 
+}
+
+async function findFavIcon(hostname, apiType){
+    var url = `https://${hostname}/`
+    var response = await fetch(`https://${hostname}/`)
+    var body = await response.text()
+    var document = Document.parseHTMLUnsafe(body)
+    var links = document.head.getElementsByTagName('link')
+    for(let i=0; i< links.length; i++){
+        if(links[i].relList.contains("icon")){
+            var favicon = links[i].href
+            if(!favicon.startsWith("https://")){
+                favicon = `https://${hostname}${favicon}`
+            }
+            return favicon
+        }
+    }
+
+    // No favicon could be found, using fallback images
+    return `../icons/${apiType}.png`
 }
 
 document.addEventListener("DOMContentLoaded", getAccounts);
